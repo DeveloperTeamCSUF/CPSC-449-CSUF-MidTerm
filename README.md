@@ -33,7 +33,7 @@ pip install -r requirements.txt
 pip install Flask-JWT-Extended
 ```
 
-#### Configure Environment Variables:
+### Configure Environment Variables:
 Create a `.env` file with your database credentials and secret key:
 ```plaintext
 DB_HOST=<your-database-host>
@@ -43,10 +43,10 @@ DB_NAME=<your-database-name>
 SECRET_KEY=<your-secret-key>
 ```
 
-#### Initialize Database:
+### Initialize Database:
 Set up the MySQL database using the configuration in `config.py`.
 
-#### Start the Application:
+### Start the Application:
 ```bash
 flask run
 ```
@@ -96,7 +96,7 @@ Authenticates and returns a JWT token.
 <br>
 <br>
 
-#### Public Routes
+### Public Routes
 
 **List Routes (GET /routes)**
 
@@ -113,7 +113,7 @@ Checks database connectivity.
 <br>
 <br>
 
-#### Movies Management (Protected Routes)
+### Movies Management (Protected Routes)
 <br>
 
 **Get All Movies (GET /movies)**
@@ -152,7 +152,7 @@ Authorization: Bearer <jwt_token>
 <br>
 <br>
 
-#### Ratings Management (Protected Routes)
+### Ratings Management (Protected Routes)
 <br>
 
 **Submit Rating (POST /submit_rating)**
@@ -238,7 +238,7 @@ Authorization: Bearer <jwt_token>
 <br>
 <br>
 
-#### File Management
+### File Management
 
 **Upload File (POST /upload)**
 
