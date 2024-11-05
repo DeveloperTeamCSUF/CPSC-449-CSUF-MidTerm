@@ -5,16 +5,53 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 import os
 from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
 
+
+load_dotenv()
 
 app = Flask(__name__)
-app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
 jwt = JWTManager(app)
 
 # Initialize the database
 init_db(app)
+
+@app.route('/routes', methods=['GET'])
+def list_routes():
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            'endpoint': rule.endpoint,
+            'methods': list(rule.methods),
+            'path': str(rule)
+        })
+    return jsonify(routes)
+
+
+
+
+@app.route('/test_db_connection', methods=['GET'])
+def test_db_connection():
+    try:
+        # Open a cursor to perform database operations
+        cursor = mysql.connection.cursor()
+        # Execute a simple query
+        cursor.execute("SHOW TABLES;")
+        # Fetch the results
+        tables = cursor.fetchall()
+        # Close the cursor
+        cursor.close()
+        return jsonify({"status": "success", "tables": tables}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+
+
+
 
 # User registration endpoint
 @app.route('/register', methods=['POST'])
