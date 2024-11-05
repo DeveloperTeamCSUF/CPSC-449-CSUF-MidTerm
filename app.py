@@ -104,7 +104,7 @@ def get_all_movies():
         query = "SELECT id, title, director, release_year FROM movies"
         cursor.execute(query)
         movies = cursor.fetchall()
-        cursor.close()
+        cursor.close() 
 
         return jsonify(movies), 200
     except Exception as e:
