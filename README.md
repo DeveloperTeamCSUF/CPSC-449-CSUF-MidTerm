@@ -1,3 +1,3 @@
-Team members:
+Team members: Hao Thai, Manjari Bhavanasi
 
 
