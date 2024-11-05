@@ -50,10 +50,13 @@ Set up the MySQL database using the configuration in `config.py`.
 ```bash
 flask run
 ```
-Access the app at http://127.0.0.1:5000.
+Access the app at http://127.0.0.1:5000.  
 
-### API Endpoints and Testing with Postman
+<br>
+<br>
 
+## API Endpoints and Testing with Postman
+<br>
 #### Authentication and User Management
 
 **Register User (POST /register)**
@@ -69,6 +72,9 @@ Registers a new user with a role (admin or user).
 }
 ```
 **Response:** Confirmation or error if username exists.
+
+<br>
+<br>
 
 **Login (POST /login)**
 
@@ -87,6 +93,8 @@ Authenticates and returns a JWT token.
   "access_token": "<jwt_token>"
 }
 ```
+<br>
+<br>
 
 #### Public Routes
 
@@ -102,7 +110,11 @@ Checks database connectivity.
 
 **Response:** JSON status and tables list if successful.
 
+<br>
+<br>
+
 #### Movies Management (Protected Routes)
+<br>
 
 **Get All Movies (GET /movies)**
 
@@ -114,6 +126,9 @@ Authorization: Bearer <jwt_token>
 ```
 
 **Response:** List of movies.
+
+<br>
+<br>
 
 **Add Movie (POST /add_movie)**
 
@@ -134,7 +149,11 @@ Authorization: Bearer <jwt_token>
 ```
 **Response:** Confirmation of addition.
 
+<br>
+<br>
+
 #### Ratings Management (Protected Routes)
+<br>
 
 **Submit Rating (POST /submit_rating)**
 
@@ -154,6 +173,9 @@ Authorization: Bearer <jwt_token>
 ```
 **Response:** Rating submission confirmation.
 
+<br>
+<br>
+
 **Get All Ratings (GET /ratings)**
 
 Lists all ratings with related movie details.
@@ -165,6 +187,9 @@ Authorization: Bearer <jwt_token>
 
 **Response:** List of all ratings.
 
+<br>
+<br>
+
 **Get Movie Details with Ratings (GET /movies/<int:movie_id>)**
 
 Retrieves movie details along with ratings.
@@ -175,6 +200,9 @@ Authorization: Bearer <jwt_token>
 ```
 
 **Response:** Movie details and ratings.
+
+<br>
+<br>
 
 **Update Rating (PUT /ratings/<int:movie_id>)**
 
@@ -193,6 +221,9 @@ Authorization: Bearer <jwt_token>
 ```
 **Response:** Confirmation of updated rating.
 
+<br>
+<br>
+
 **Delete Rating (DELETE /ratings/<int:rating_id>)**
 
 Deletes a rating. Admin users can delete any rating, while regular users can delete only their own.
@@ -203,6 +234,9 @@ Authorization: Bearer <jwt_token>
 ```
 
 **Response:** Confirmation of rating deletion.
+
+<br>
+<br>
 
 #### File Management
 
@@ -219,6 +253,9 @@ Authorization: Bearer <jwt_token>
 Form Data: file (Choose a file to upload).
 
 **Response:** Confirmation of successful upload.
+
+<br>
+<br>
 
 ### Error Handling
 
