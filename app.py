@@ -3,6 +3,7 @@ from config import init_db, mysql
 from models import add_user
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
+from werkzeug.security import check_password_hash
 
 
 app = Flask(__name__)
@@ -43,11 +44,14 @@ def login():
     password = data.get('password')
 
     cursor = mysql.connection.cursor()
-    query = "SELECT * FROM users WHERE username = %s AND password = %s"
-    cursor.execute(query, (username, password))
+    # First, get the user
+    query = "SELECT * FROM users WHERE username = %s"
+    cursor.execute(query, (username,))
     user = cursor.fetchone()
+    cursor.close()
 
-    if user:
+    # Verify password using check_password_hash
+    if user and check_password_hash(user['password'], password):
         access_token = create_access_token(identity=username)
         return jsonify(access_token=access_token), 200
     else:
