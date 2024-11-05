@@ -4,6 +4,7 @@ from models import add_user
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
 from werkzeug.security import check_password_hash
+from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
@@ -58,101 +59,73 @@ def login():
         return jsonify(message="Invalid credentials"), 401
 
 
-@app.route('/movies', methods=['POST'])
+@app.route('/add_movie', methods=['POST'])
 @jwt_required()
 def add_movie():
-    # Verify the JWT token and get the identity
     current_user = get_jwt_identity()
-
-    # Query the user role from the database using the username from the JWT token
-    cursor = mysql.connection.cursor()
-    query = "SELECT role FROM users WHERE username = %s"
-    cursor.execute(query, (current_user,))
-    user = cursor.fetchone()
-
-    if not user or user['role'] != 'admin':
-        return jsonify({"message": "Admins only!"}), 403  # Forbidden
-
-    # Get movie details from the request body
     data = request.get_json()
-    title = data.get('title')
-    description = data.get('description')
-
-    try:
-        # Insert movie into the database
-        query = "INSERT INTO movies (title, description) VALUES (%s, %s)"
-        cursor.execute(query, (title, description))
-        mysql.connection.commit()
-        return jsonify({"message": "Movie added successfully!"}), 201
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"message": "Failed to add movie"}), 500
     
-@app.route('/ratings', methods=['POST'])
+    try:
+        cursor = mysql.connection.cursor()
+        query = "INSERT INTO movies (title, director, release_year) VALUES (%s, %s, %s)"
+        cursor.execute(query, (data['title'], data['director'], data['release_year']))
+        mysql.connection.commit()
+        cursor.close()
+        return jsonify({"message": "Movie added successfully"}), 201
+    except Exception as e:
+        return jsonify({"message": "Failed to add movie", "error": str(e)}), 500
+
+@app.route('/submit_rating', methods=['POST'])
 @jwt_required()
 def submit_rating():
     current_user = get_jwt_identity()
-
-    # Get the user role from the database using the username from the JWT token
-    cursor = mysql.connection.cursor()
-    cursor.execute("SELECT role FROM users WHERE username = %s", (current_user,))
-    user = cursor.fetchone()
-
-    if not user or user['role'] == 'admin':
-        return jsonify({"message": "Admins are not allowed to submit ratings."}), 403  # Forbidden
-
-    # Get the movie_id and rating from the request body
     data = request.get_json()
-    movie_id = data.get('movie_id')
-    rating = data.get('rating')
-
-    # Check if the movie exists in the database
-    cursor.execute("SELECT * FROM movies WHERE id = %s", (movie_id,))
-    movie = cursor.fetchone()
-
-    if not movie:
-        return jsonify({"message": "Movie not found"}), 404
-
-    # Insert the rating into the ratings table
-    try:
-        query = "INSERT INTO ratings (username, movie_id, rating) VALUES (%s, %s, %s)"
-        cursor.execute(query, (current_user, movie_id, rating))
-        mysql.connection.commit()
-        return jsonify({"message": "Rating submitted successfully!"}), 201
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"message": "Failed to submit rating"}), 500
     
-@app.route('/all_ratings', methods=['GET'])
+    try:
+        cursor = mysql.connection.cursor()
+        # Get user_id
+        cursor.execute("SELECT id FROM users WHERE username = %s", (current_user,))
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+            
+        query = "INSERT INTO ratings (user_id, movie_id, rating, username) VALUES (%s, %s, %s, %s)"
+        cursor.execute(query, (user['id'], data['movie_id'], data['rating'], current_user))
+        mysql.connection.commit()
+        cursor.close()
+        return jsonify({"message": "Rating submitted successfully"}), 201
+    except Exception as e:
+        return jsonify({"message": "Failed to submit rating", "error": str(e)}), 500
+
+@app.route('/ratings', methods=['GET'])
 @jwt_required()
 def get_all_ratings():
-    current_user = get_jwt_identity()
-
     try:
-        # Fetch all ratings with movie titles
         cursor = mysql.connection.cursor()
         query = """
             SELECT 
-                r.id AS rating_id, 
-                r.username, 
-                r.rating, 
-                m.title AS movie_title
+                r.id AS rating_id,
+                r.username,
+                r.rating,
+                m.title AS movie_title,
+                m.director,
+                m.release_year
             FROM 
-                ratings r 
+                ratings r
             JOIN 
                 movies m ON r.movie_id = m.id
         """
         cursor.execute(query)
         ratings = cursor.fetchall()
+        cursor.close()
 
         if not ratings:
             return jsonify({"message": "No ratings found"}), 404
 
         return jsonify(ratings), 200
-
     except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"message": "Failed to retrieve ratings"}), 500
+        return jsonify({"message": "Failed to retrieve ratings", "error": str(e)}), 500
 
 
 @app.route('/movies/<int:movie_id>', methods=['GET'])
@@ -270,30 +243,54 @@ def allowed_file(filename):
 @app.route('/upload', methods=['POST'])
 @jwt_required()
 def upload_file():
+    current_user = get_jwt_identity()
+    
+    # Check if a file was uploaded
     if 'file' not in request.files:
-        return jsonify({"message": "No file part in the request"}), 400
-
+        return jsonify({"message": "No file part"}), 400
+    
     file = request.files['file']
-
+    
+    # Check if a file was selected
     if file.filename == '':
-        return jsonify({"message": "No selected file"}), 400
-
-    if file and allowed_file(file.filename):
-        filename = file.filename
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        try:
-            file.save(file_path)
-            return jsonify({"message": f"File '{filename}' uploaded successfully!"}), 201
-        except Exception as e:
-            print(f"Error: {e}")
-            return jsonify({"message": "Failed to upload file"}), 500
-    else:
-        return jsonify({"message": "Unsupported file extension"}), 400
+        return jsonify({"message": "No file selected"}), 400
+    
+    # Validate file type
+    if not allowed_file(file.filename):
+        return jsonify({
+            "message": "File type not allowed",
+            "allowed_types": list(ALLOWED_EXTENSIONS)
+        }), 400
+    
+    try:
+        # Secure the filename and save the file
+        filename = secure_filename(file.filename)
+        # Add username prefix to avoid filename conflicts
+        safe_filename = f"{current_user}_{filename}"
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], safe_filename)
+        file.save(file_path)
+        
+        # Save file info to database
+        cursor = mysql.connection.cursor()
+        query = "INSERT INTO files (username, filename, filepath) VALUES (%s, %s, %s)"
+        cursor.execute(query, (current_user, filename, file_path))
+        mysql.connection.commit()
+        cursor.close()
+        
+        return jsonify({
+            "message": "File uploaded successfully",
+            "filename": filename
+        }), 201
+        
+    except Exception as e:
+        return jsonify({
+            "message": "Failed to upload file",
+            "error": str(e)
+        }), 500
 
 # Ensure the upload folder exists
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
-
 
 if __name__ == '__main__':
     app.run(debug=True)
