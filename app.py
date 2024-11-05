@@ -95,6 +95,20 @@ def login():
     else:
         return jsonify(message="Invalid credentials"), 401
 
+    
+@app.route('/movies', methods=['GET'])
+@jwt_required()
+def get_all_movies():
+    try:
+        cursor = mysql.connection.cursor()
+        query = "SELECT id, title, director, release_year FROM movies"
+        cursor.execute(query)
+        movies = cursor.fetchall()
+        cursor.close()
+
+        return jsonify(movies), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to retrieve movies", "error": str(e)}), 500
 
 @app.route('/add_movie', methods=['POST'])
 @jwt_required()
