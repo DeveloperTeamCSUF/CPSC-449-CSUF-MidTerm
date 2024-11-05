@@ -1,7 +1,7 @@
 Team members: 
 
-Ali Khaled - alikhaled@csu.fullerton.edu
-Hao Thai - 
-Manjari Bhavanasi - 
+Ali Khaled - alikhaled@csu.fullerton.edu <br>
+Hao Thai -                               <br>
+Manjari Bhavanasi -                      <br>
 
 
