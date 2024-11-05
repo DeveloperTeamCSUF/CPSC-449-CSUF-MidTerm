@@ -1,3 +1,7 @@
-Team members: Hao Thai, Manjari Bhavanasi
+Team members: 
+
+Ali Khaled - alikhaled@csu.fullerton.edu
+Hao Thai - 
+Manjari Bhavanasi - 
 
 
