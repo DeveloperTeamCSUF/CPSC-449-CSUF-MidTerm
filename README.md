@@ -4,7 +4,7 @@ This project is a RESTful API developed with Flask that handles error handling, 
 ### Team Members
 - Ali Khaled - alikhaled@csu.fullerton.edu
 - Hao Thai - hthai1@csu.fullerton.edu
-- Manjari Bhavanasi
+- Manjari Bhavanasi- manjaribhavanasi@csu.fullerton.edu
 
 ### Prerequisites
 - Python 3.8+
