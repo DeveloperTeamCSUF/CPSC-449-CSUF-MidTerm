@@ -157,6 +157,35 @@ def add_movie():
     except Exception as e:
         return jsonify({"message": "Failed to add movie", "error": str(e)}), 500
 
+@app.route('/delete_movie/<int:movie_id>', methods=['DELETE'])
+@jwt_required()
+def delete_movie(movie_id):
+    current_user = get_jwt_identity()
+
+    try:
+        # Open a cursor to perform database operations
+        cursor = mysql.connection.cursor()
+        
+        # Check if the movie exists
+        cursor.execute("SELECT * FROM movies WHERE id = %s", (movie_id,))
+        movie = cursor.fetchone()
+
+        if not movie:
+            cursor.close()
+            return jsonify({"message": "Movie not found"}), 404
+
+        # Delete the movie from the database
+        delete_query = "DELETE FROM movies WHERE id = %s"
+        cursor.execute(delete_query, (movie_id,))
+        mysql.connection.commit()
+        cursor.close()
+
+        return jsonify({"message": "Movie deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": "Failed to delete movie", "error": str(e)}), 500
+
+
+
 @app.route('/submit_rating', methods=['POST'])
 @jwt_required()
 def submit_rating():
