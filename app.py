@@ -13,11 +13,42 @@ load_dotenv()
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'your-secret-key')
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload size
+
 jwt = JWTManager(app)
 
 # Initialize the database
 init_db(app)
+
+
+@app.route('/ratings/update/<int:movie_id>', methods=['PUT'])
+@jwt_required()
+def update_rating(movie_id):
+    current_user = get_jwt_identity()
+    data = request.get_json()
+    new_rating = data.get('rating')
+
+    if new_rating is None:
+        return jsonify({"message": "New rating is required"}), 400
+
+    try:
+        cursor = mysql.connection.cursor()
+        query = "SELECT * FROM ratings WHERE username = %s AND movie_id = %s"
+        cursor.execute(query, (current_user, movie_id))
+        rating = cursor.fetchone()
+
+        if not rating:
+            return jsonify({"message": "No existing rating found for this movie"}), 404
+
+        update_query = "UPDATE ratings SET rating = %s WHERE username = %s AND movie_id = %s"
+        cursor.execute(update_query, (new_rating, current_user, movie_id))
+        mysql.connection.commit()
+        return jsonify({"message": "Rating updated successfully"}), 200
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"message": "Failed to update rating"}), 500
+ 
 
 @app.route('/routes', methods=['GET'])
 def list_routes():
@@ -211,78 +242,6 @@ def get_movie_details(movie_id):
         print(f"Error: {e}")
         return jsonify({"message": "Failed to fetch movie details"}), 500
 
-
-@app.route('/ratings/<int:movie_id>', methods=['PUT'])
-@jwt_required()
-def update_rating(movie_id):
-    current_user = get_jwt_identity()
-
-    # Get the new rating from the request body
-    data = request.get_json()
-    new_rating = data.get('rating')
-
-    if new_rating is None:
-        return jsonify({"message": "New rating is required"}), 400
-
-    try:
-        # Check if the rating exists for the current user and movie
-        cursor = mysql.connection.cursor()
-        query = "SELECT * FROM ratings WHERE username = %s AND movie_id = %s"
-        cursor.execute(query, (current_user, movie_id))
-        rating = cursor.fetchone()
-
-        if not rating:
-            return jsonify({"message": "No existing rating found for this movie"}), 404
-
-        # Update the user's rating for the movie
-        update_query = "UPDATE ratings SET rating = %s WHERE username = %s AND movie_id = %s"
-        cursor.execute(update_query, (new_rating, current_user, movie_id))
-        mysql.connection.commit()
-
-        return jsonify({"message": "Rating updated successfully"}), 200
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"message": "Failed to update rating"}), 500
-    
-@app.route('/ratings/<int:rating_id>', methods=['DELETE'])
-@jwt_required()
-def delete_rating(rating_id):
-    current_user = get_jwt_identity()  # Get the username from JWT token
-
-    try:
-        # Retrieve the user's role from the database
-        cursor = mysql.connection.cursor()
-        cursor.execute("SELECT role FROM users WHERE username = %s", (current_user,))
-        user = cursor.fetchone()
-
-        if not user:
-            return jsonify({"message": "User not found"}), 404
-
-        # If the user is an admin, they can delete any rating
-        if user['role'] == 'admin':
-            delete_query = "DELETE FROM ratings WHERE id = %s"
-            cursor.execute(delete_query, (rating_id,))
-            mysql.connection.commit()
-            return jsonify({"message": "Rating deleted successfully (Admin)!"}), 200
-
-        # If the user is not an admin, check if the rating belongs to them
-        query = "SELECT * FROM ratings WHERE id = %s AND username = %s"
-        cursor.execute(query, (rating_id, current_user))
-        rating = cursor.fetchone()
-
-        if not rating:
-            return jsonify({"message": "No rating found or unauthorized to delete"}), 404
-
-        # If the rating belongs to the user, delete it
-        delete_query = "DELETE FROM ratings WHERE id = %s"
-        cursor.execute(delete_query, (rating_id,))
-        mysql.connection.commit()
-        return jsonify({"message": "Rating deleted successfully (User)!"}), 200
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"message": "Failed to delete rating"}), 500
 
 # Set of allowed extensions
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'pdf', 'txt'}
